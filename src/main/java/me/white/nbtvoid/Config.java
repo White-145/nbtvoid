@@ -14,7 +14,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.text.Text;
 
-// copied from (i forgor from 💀)
+// copied from (i forgor from. 💀)
 @Environment(EnvType.CLIENT)
 public class Config {
     public enum CheckType {
