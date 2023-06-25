@@ -36,11 +36,13 @@ public class SearchProvider {
             case '$':
                 reader.skip();
                 if (reader.canRead()) nbtQueries.add(reader.readString());
+                break;
             case '&':
                 reader.skip();
-                if (reader.canRead()) idQueries.add(reader.readString());
+                if (reader.canRead()) idQueries.add(reader.readString().toLowerCase(Locale.ROOT));
                 break;
-            default: nameQueries.add(reader.readString());
+            default:
+                nameQueries.add(reader.readString().toLowerCase(Locale.ROOT));
         }
 
         return new SearchQuery(nameQueries, idQueries, nbtQueries);
@@ -55,6 +57,7 @@ public class SearchProvider {
                     for (String idQuery : query.idQueries) {
                         if (matchIdentifier(entry.getItem(), idQuery)) break idCheck;
                     }
+                    // damn if only there were for-else like in python
                     continue;
                 }
             } else {
