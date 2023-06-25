@@ -10,14 +10,15 @@
   ],
   "contact": {
     "homepage": "https://modrinth.com/mod/nbt-void",
-    "sources": "https://github.com/White-145/nbtvoid"
+    "sources": "https://github.com/White-145/nbtvoid",
+    "issues": "https://github.com/White-145/nbtvoid/issues"
   },
 
   "license": "MIT",
   "icon": "assets/nbtvoid/icon.png",
 
   "accessWidener": "nbtvoid.accesswidener",
-  "environment": "*",
+  "environment": "client",
   "entrypoints": {
     "client": [
       "me.white.nbtvoid.NbtVoid"

@@ -61,7 +61,7 @@ public class Config {
     public static final CheckType DEFAULT_ID_CHECK = CheckType.ANY;
     public static final CheckType DEFAULT_NBT_CHECK = CheckType.ALL;
     public static final CheckType DEFAULT_IGNORE_ITEMS_CHECK = CheckType.ANY;
-    public static final boolean DEFAULT_DO_SAVE = false;
+    public static final boolean DEFAULT_DO_SAVE = true;
     public static final boolean DEFAULT_IS_ENABLED = true;
     public static final boolean DEFAULT_DO_DYNAMIC_UPDATE = false;
     public static final List<String> DEFAULT_IGNORE_NBT = Arrays.asList(new String[] {
