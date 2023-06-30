@@ -35,11 +35,14 @@ import net.minecraft.village.TradeOffer;
 import net.minecraft.advancement.Advancement;
 import net.minecraft.advancement.AdvancementDisplay;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.data.DataTracker.SerializedEntry;
 import net.minecraft.entity.decoration.ItemFrameEntity;
+import net.minecraft.entity.decoration.DisplayEntity.ItemDisplayEntity;
+import net.minecraft.entity.player.PlayerInventory;
 
 public class VoidController {
 	public static final Path PATH = FabricLoader.getInstance().getGameDir().resolve("void.nbt");
@@ -57,6 +60,7 @@ public class VoidController {
 			List<VoidEntry> oldVoid = new ArrayList<>(nbtVoid);
 			clear();
 			for (VoidEntry entry : oldVoid) addEntry(entry);
+			SCAN_WORLD_RUNNABLE.run();
 			updating = false;
 		}
 	};
@@ -72,9 +76,15 @@ public class VoidController {
 	public static final Runnable SCAN_WORLD_RUNNABLE = new Runnable() {
 		@Override
 		public void run() {
-			// Not done yet, TODO
-			for (Entity entity : MinecraftClient.getInstance().getNetworkHandler().getWorld().getEntities()) {
-				NbtVoid.LOGGER.info(entity.toString());
+			MinecraftClient client = MinecraftClient.getInstance();
+			ClientPlayerEntity player = client.player;
+			PlayerInventory inventory = client.player.getInventory();
+			addItems(player.getArmorItems());
+			addItems(inventory.offHand);
+			addItems(inventory.main);
+			addItems(player.getEnderChestInventory().stacks);
+
+			for (Entity entity : client.getNetworkHandler().getWorld().getEntities()) {
 				addItems(entity.getArmorItems());
 				addItems(entity.getHandItems());
 				addItems(entity.getItemsEquipped());
@@ -87,6 +97,9 @@ public class VoidController {
 					ItemStack item = itemEntity.getStack();
 					if (item != null)
 						addItem(item);
+				}
+				if (entity instanceof ItemDisplayEntity itemDisplayEntity) {
+					addItem(itemDisplayEntity.getStackReference(0).get());
 				}
 			}
 		}

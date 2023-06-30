@@ -1,217 +1,215 @@
 package me.white.nbtvoid;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
 
-import me.shedaniel.clothconfig2.api.ConfigBuilder;
-import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
+import dev.isxander.yacl3.api.Binding;
+import dev.isxander.yacl3.api.ConfigCategory;
+import dev.isxander.yacl3.api.ListOption;
+import dev.isxander.yacl3.api.Option;
+import dev.isxander.yacl3.api.OptionDescription;
+import dev.isxander.yacl3.api.YetAnotherConfigLib;
+import dev.isxander.yacl3.api.controller.BooleanControllerBuilder;
+import dev.isxander.yacl3.api.controller.EnumControllerBuilder;
+import dev.isxander.yacl3.api.controller.IntegerFieldControllerBuilder;
+import dev.isxander.yacl3.api.controller.StringControllerBuilder;
+import me.white.nbtvoid.Config.CheckType;
+import me.white.nbtvoid.Config.SortType;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.command.argument.NbtPathArgumentType;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 
 public class ModMenuIntegration implements ModMenuApi {
+    private static Option<Boolean> isEnabledOption = Option.<Boolean>createBuilder()
+        .name(Text.translatable(NbtVoid.localized("config", "isEnabled")))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "isEnabledTooltip"))))
+        .binding(Binding.generic(
+            Config.DEFAULT_IS_ENABLED,
+            Config.getInstance()::getIsEnabled,
+            Config.getInstance()::setIsEnabled
+        ))
+        .controller(opt -> BooleanControllerBuilder.create(opt)
+            .onOffFormatter()
+        )
+        .build();
+        
+    private static Option<Boolean> doSaveOption = Option.<Boolean>createBuilder()
+        .name(Text.translatable(NbtVoid.localized("config", "doSave")))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "doSaveTooltip"))))
+        .binding(Binding.generic(
+            Config.DEFAULT_DO_SAVE,
+            Config.getInstance()::getDoSave,
+            Config.getInstance()::setDoSave
+        ))
+        .controller(opt -> BooleanControllerBuilder.create(opt)
+            .onOffFormatter()
+        )
+        .build();
+
+    private static Option<Boolean> doDynamicUpdateOption = Option.<Boolean>createBuilder()
+        .name(Text.translatable(NbtVoid.localized("config", "doDynamicUpdate")))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "doDynamicUpdateTooltip"))))
+        .binding(Binding.generic(
+            Config.DEFAULT_DO_DYNAMIC_UPDATE,
+            Config.getInstance()::getDoDynamicUpdate,
+            value -> {
+                Config.getInstance().setDoDynamicUpdate(value);
+                new Thread(VoidController.UPDATE_RUNNABLE).start();
+            }
+        ))
+        .controller(opt -> BooleanControllerBuilder.create(opt)
+            .trueFalseFormatter()
+        )
+        .build();
+
+    private static Option<Integer> maxDisplayItemsOption = Option.<Integer>createBuilder()
+        .name(Text.translatable(NbtVoid.localized("config", "maxDisplayItems")))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "maxDisplayItemsTooltip"))))
+        .binding(Binding.generic(
+            Config.DEFAULT_MAX_DISPLAY_ITEMS,
+            Config.getInstance()::getMaxDisplayItems,
+            Config.getInstance()::setMaxDisplayItems
+        ))
+        .controller(opt -> IntegerFieldControllerBuilder.create(opt)
+            .min(0)
+            .max(Config.MAX_MAX_DISPLAY_ITEMS)
+        )
+        .build();
+    
+    private static Option<Integer> maxStoredItemsOption = Option.<Integer>createBuilder()
+        .name(Text.translatable(NbtVoid.localized("config", "maxStoredItems")))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "maxStoredItemsTooltip"))))
+        .binding(Binding.generic(
+            Config.DEFAULT_MAX_STORED_ITEMS,
+            Config.getInstance()::getMaxStoredItems,
+            value -> {
+                Config.getInstance().setMaxStoredItems(value);
+                new Thread(VoidController.UPDATE_MAX_STORED_ITEMS_RUNNABLE).start();
+            }
+        ))
+        .controller(opt -> IntegerFieldControllerBuilder.create(opt)
+            .min(0)
+            .max(Config.MAX_MAX_STORED_ITEMS)
+        )
+        .build();
+    
+    private static Option<String> defaultSearchQueryOption = Option.<String>createBuilder()
+        .name(Text.translatable(NbtVoid.localized("config", "defaultSearchQuery")))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "defaultSearchQueryTooltip"))))
+        .binding(Binding.generic(
+            Config.DEFAULT_DEFAULT_SEARCH_QUERY,
+            Config.getInstance()::getDefaultSearchQuery,
+            Config.getInstance()::setDefaultSearchQuery
+        ))
+        .controller(StringControllerBuilder::create)
+        .build();
+    
+    private static Option<SortType> sortTypeOption = Option.<SortType>createBuilder()
+        .name(Text.translatable(NbtVoid.localized("config", "sortType")))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "sortTypeTooltip"))))
+        .binding(Binding.generic(
+            Config.DEFAULT_SORT_TYPE,
+            Config.getInstance()::getSortType,
+            Config.getInstance()::setSortType
+        ))
+        .controller(opt -> EnumControllerBuilder.create(opt)
+            .enumClass(SortType.class)
+            .valueFormatter(SortType::localized)
+        )
+        .build();
+    
+    private static Option<CheckType> nameCheckOption = Option.<CheckType>createBuilder()
+        .name(Text.translatable(NbtVoid.localized("config", "nameCheck")))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "nameCheckTooltip"))))
+        .binding(Binding.generic(
+            Config.DEFAULT_NAME_CHECK,
+            Config.getInstance()::getNameCheck,
+            Config.getInstance()::setNameCheck
+        ))
+        .controller(opt -> EnumControllerBuilder.create(opt)
+            .enumClass(CheckType.class)
+            .valueFormatter(CheckType::localized)
+        )
+        .build();
+    
+    private static Option<CheckType> nbtCheckOption = Option.<CheckType>createBuilder()
+        .name(Text.translatable(NbtVoid.localized("config", "nbtCheck")))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "nbtCheckTooltip"))))
+        .binding(Binding.generic(
+            Config.DEFAULT_NBT_CHECK,
+            Config.getInstance()::getNbtCheck,
+            Config.getInstance()::setNbtCheck
+        ))
+        .controller(opt -> EnumControllerBuilder.create(opt)
+            .enumClass(CheckType.class)
+            .valueFormatter(CheckType::localized)
+        )
+        .build();
+    
+    private static ListOption<String> ignoreNbtOption = ListOption.<String>createBuilder()
+        .name(Text.translatable(NbtVoid.localized("config", "ignoreNbt")))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "ignoreNbtTooltip"))))
+        .binding(Binding.generic(
+            Config.DEFAULT_IGNORE_NBT,
+            Config.getInstance()::getIgnoreNbt,
+            value -> {
+                Config.getInstance().setIgnoreNbt(value);
+                new Thread(VoidController.UPDATE_RUNNABLE).start();
+            }
+        ))
+        .controller(StringControllerBuilder::create)
+        .initial("")
+        .build();
+
+    private static ListOption<String> removeNbtOption = ListOption.<String>createBuilder()
+        .name(Text.translatable(NbtVoid.localized("config", "removeNbt")))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "removeNbtTooltip"))))
+        .binding(Binding.generic(
+            Config.DEFAULT_REMOVE_NBT,
+            Config.getInstance()::getRemoveNbt,
+            value -> {
+                Config.getInstance().setRemoveNbt(value);
+                new Thread(VoidController.UPDATE_RUNNABLE).start();
+            }
+        ))
+        .controller(StringControllerBuilder::create)
+        .initial("")
+        .build();
+
+    public static Screen getConfigScreen(Screen parent) {
+        return YetAnotherConfigLib.createBuilder()
+            .title(Text.translatable(NbtVoid.localized("config", "title")))
+            .category(ConfigCategory.createBuilder()
+                .name(Text.translatable(NbtVoid.localized("config", "category.general")))
+                .option(isEnabledOption)
+                .option(doSaveOption)
+                .option(maxDisplayItemsOption)
+                .option(maxStoredItemsOption)
+                .build()
+            )
+            .category(ConfigCategory.createBuilder()
+                .name(Text.translatable(NbtVoid.localized("config", "category.search")))
+                .option(defaultSearchQueryOption)
+                .option(nameCheckOption)
+                .option(nbtCheckOption)
+                .option(sortTypeOption)
+                .build()
+            )
+            .category(ConfigCategory.createBuilder()
+                .name(Text.translatable(NbtVoid.localized("config", "category.exceptions")))
+                .option(doDynamicUpdateOption)
+                .option(ignoreNbtOption)
+                .option(removeNbtOption)
+                .build()
+            )
+            .build()
+            .generateScreen(parent);
+    }
+
     @Override
     public ConfigScreenFactory<?> getModConfigScreenFactory() {
-        if (FabricLoader.getInstance().isModLoaded("cloth-config2")) {
-			return (parent) -> {
-                ConfigBuilder builder = ConfigBuilder.create()
-                    .setParentScreen(parent)
-                    .setTitle(Text.translatable(NbtVoid.localized("config", "title")))
-                    .setSavingRunnable(Config::save);
-                ConfigEntryBuilder entryBuilder = builder.entryBuilder();
-        
-                builder.getOrCreateCategory(Text.translatable(NbtVoid.localized("config", "title")))
-                    .addEntry(entryBuilder
-                        .startBooleanToggle(
-                            Text.translatable(NbtVoid.localized("config", "isEnabled")),
-                            Config.getInstance().getIsEnabled()
-                        )
-                        .setTooltip(Text.translatable(NbtVoid.localized("config", "isEnabledTooltip")))
-                        .setDefaultValue(Config.DEFAULT_IS_ENABLED)
-                        .setSaveConsumer(Config.getInstance()::setIsEnabled)
-                        .build()
-                    )
-                    .addEntry(entryBuilder
-                        .startBooleanToggle(
-                            Text.translatable(NbtVoid.localized("config", "doSave")),
-                            Config.getInstance().getDoSave()
-                        )
-                        .setTooltip(Text.translatable(NbtVoid.localized("config", "doSaveTooltip")))
-                        .setDefaultValue(Config.DEFAULT_DO_SAVE)
-                        .setSaveConsumer(Config.getInstance()::setDoSave)
-                        .build()
-                    )
-                    .addEntry(entryBuilder
-                        .startBooleanToggle(
-                            Text.translatable(NbtVoid.localized("config", "doDynamicUpdate")),
-                            Config.getInstance().getDoDynamicUpdate()
-                        )
-                        .setTooltip(Text.translatable(NbtVoid.localized("config", "doDynamicUpdateTooltip")))
-                        .setDefaultValue(Config.DEFAULT_DO_DYNAMIC_UPDATE)
-                        .setSaveConsumer(value -> {
-                            Config.getInstance().setDoDynamicUpdate(value);
-                            if (value) {
-                                Thread thread = new Thread(VoidController.UPDATE_RUNNABLE);
-                                thread.start();
-                            }
-                        })
-                        .build()
-                    )
-                    .addEntry(entryBuilder
-                        .startEnumSelector(
-                            Text.translatable(NbtVoid.localized("config", "sortType")),
-                            Config.SortType.class,
-                            Config.getInstance().getSortType()
-                        )
-                        .setTooltip(Text.translatable(NbtVoid.localized("config", "sortTypeTooltip")))
-                        .setDefaultValue(Config.DEFAULT_SORT_TYPE)
-                        .setEnumNameProvider(Config.SortType::localized)
-                        .setSaveConsumer(Config.getInstance()::setSortType)
-                        .build()
-                    )
-                    .addEntry(entryBuilder
-                        .startIntField(
-                            Text.translatable(NbtVoid.localized("config", "maxDisplayItems")),
-                            Config.getInstance().getMaxDisplayItems()
-                        )
-                        .setTooltip(Text.translatable(NbtVoid.localized("config", "maxDisplayItemsTooltip")))
-                        .setDefaultValue(Config.DEFAULT_MAX_DISPLAY_ITEMS)
-                        .setMin(0)
-                        .setMax(Config.MAX_MAX_DISPLAY_ITEMS)
-                        .setSaveConsumer(Config.getInstance()::setMaxDisplayItems)
-                        .build()
-                    )
-                    .addEntry(entryBuilder
-                        .startIntField(
-                            Text.translatable(NbtVoid.localized("config", "maxStoredItems")),
-                            Config.getInstance().getMaxStoredItems()
-                        )
-                        .setTooltip(Text.translatable(NbtVoid.localized("config", "maxStoredItemsTooltip")))
-                        .setDefaultValue(Config.DEFAULT_MAX_STORED_ITEMS)
-                        .setMin(0)
-                        .setMax(Config.MAX_MAX_STORED_ITEMS)
-                        .setSaveConsumer(value -> {
-                            Config.getInstance().setMaxStoredItems(value);
-                            VoidController.UPDATE_MAX_STORED_ITEMS_RUNNABLE.run();
-                        })
-                        .build()
-                    )
-                    .addEntry(entryBuilder
-                        .startStrField(
-                            Text.translatable(NbtVoid.localized("config", "defaultSearchQuery")),
-                            Config.getInstance().getDefaultSearchQuery()
-                        )
-                        .setTooltip(Text.translatable(NbtVoid.localized("config", "defaultSearchQueryTooltip")))
-                        .setDefaultValue(Config.DEFAULT_DEFAULT_SEARCH_QUERY)
-                        .setSaveConsumer(Config.getInstance()::setDefaultSearchQuery)
-                        .build()
-                    )
-                    .addEntry(entryBuilder
-                        .startEnumSelector(
-                            Text.translatable(NbtVoid.localized("config", "nameCheck")),
-                            Config.CheckType.class,
-                            Config.getInstance().getNameCheck()
-                        )
-                        .setTooltip(Text.translatable(NbtVoid.localized("config", "nameCheckTooltip")))
-                        .setEnumNameProvider(Config.CheckType::localized)
-                        .setDefaultValue(Config.DEFAULT_NAME_CHECK)
-                        .setSaveConsumer(Config.getInstance()::setNameCheck)
-                        .build()
-                    )
-                    .addEntry(entryBuilder
-                        .startEnumSelector(
-                            Text.translatable(NbtVoid.localized("config", "nbtCheck")),
-                            Config.CheckType.class,
-                            Config.getInstance().getNbtCheck()
-                        )
-                        .setTooltip(Text.translatable(NbtVoid.localized("config", "nbtCheckTooltip")))
-                        .setEnumNameProvider(Config.CheckType::localized)
-                        .setDefaultValue(Config.DEFAULT_NBT_CHECK)
-                        .setSaveConsumer(Config.getInstance()::setNbtCheck)
-                        .build()
-                    )
-                    // .addEntry(entryBuilder
-                    //     .startEnumSelector(
-                    //         Text.translatable(NbtVoid.localized("config", "ignoreItemsCheck")),
-                    //         Config.CheckType.class,
-                    //         Config.getInstance().getIgnoreItemsCheck()
-                    //     )
-                    //     .setTooltip(Text.translatable(NbtVoid.localized("config", "ignoreItemsCheckTooltip")))
-                    //     .setEnumNameProvider(Config.CheckType::localized)
-                    //     .setDefaultValue(Config.DEFAULT_IGNORE_ITEMS_CHECK)
-                    //     .setSaveConsumer(Config.getInstance()::setIgnoreItemsCheck)
-                    //     .build()
-                    // )
-                    .addEntry(entryBuilder
-                        .startStrList(
-                            Text.translatable(NbtVoid.localized("config", "ignoreNbt")),
-                            Config.getInstance().getIgnoreNbt()
-                        )
-                        .setDefaultValue(Config.DEFAULT_IGNORE_NBT)
-                        .setTooltip(Text.translatable(NbtVoid.localized("config", "ignoreNbtTooltip")))
-                        .setSaveConsumer(value -> {
-                            List<String> newValue = new ArrayList<>();
-                            for (String ignoreNbt : value) {
-                                try {
-                                    new NbtPathArgumentType().parse(new com.mojang.brigadier.StringReader(ignoreNbt));
-                                    newValue.add(ignoreNbt);
-                                } catch (Exception E) {
-                                    NbtVoid.LOGGER.info("Invalid ignore NBT: " + ignoreNbt);
-                                }
-                            }
-                            Config.getInstance().setIgnoreNbt(newValue);
-                            if (Config.getInstance().getDoDynamicUpdate()) {
-                                Thread thread = new Thread(VoidController.UPDATE_RUNNABLE);
-                                thread.start();
-                            }
-                        })
-                        .build()
-                    )
-                    .addEntry(entryBuilder
-                        .startStrList(
-                            Text.translatable(NbtVoid.localized("config", "removeNbt")),
-                            Config.getInstance().getRemoveNbt()
-                        )
-                        .setDefaultValue(Config.DEFAULT_REMOVE_NBT)
-                        .setTooltip(Text.translatable(NbtVoid.localized("config", "removeNbtTooltip")))
-                        .setSaveConsumer(value -> {
-                            List<String> newValue = new ArrayList<>();
-                            for (String removeNbt : value) {
-                                try {
-                                    new NbtPathArgumentType().parse(new com.mojang.brigadier.StringReader(removeNbt));
-                                    newValue.add(removeNbt);
-                                } catch (Exception E) {
-                                    NbtVoid.LOGGER.info("Invalid remove NBT: " + removeNbt);
-                                }
-                            }
-                            Config.getInstance().setRemoveNbt(newValue);
-                            if (Config.getInstance().getDoDynamicUpdate()) {
-                                Thread thread = new Thread(VoidController.UPDATE_RUNNABLE);
-                                thread.start();
-                            }
-                        })
-                        .build()
-                    // )
-                    // .addEntry(entryBuilder
-                    //     .startStrList(
-                    //         Text.translatable(NbtVoid.localized("config", "ignoreItems")),
-                    //         Config.getInstance().getIgnoreItems()
-                    //     )
-                    //     .setDefaultValue(Config.DEFAULT_IGNORE_ITEMS)
-                    //     .setTooltip(Text.translatable(NbtVoid.localized("config", "ignoreItemsTooltip")))
-                    //     .setSaveConsumer(value -> {
-                    //         Config.getInstance().setIgnoreItems(value);
-                    //         Thread thread = new Thread(VoidController.UPDATE_RUNNABLE);
-				    //         thread.start();
-                    //     })
-                    //     .build()
-                    );
-                    
-                return builder.build();
-            };
+        if (FabricLoader.getInstance().isModLoaded("yet_another_config_lib_v3")) {
+            return ModMenuIntegration::getConfigScreen;
 		} else {
 			return parent -> null;
 		}

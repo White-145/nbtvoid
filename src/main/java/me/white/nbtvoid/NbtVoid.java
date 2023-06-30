@@ -109,8 +109,6 @@ public class NbtVoid implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
-		Config.load();
-
 		if (Config.getInstance().getDoSave()) VoidController.load();
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			if (Config.getInstance().getDoSave()) VoidController.save();
@@ -119,8 +117,7 @@ public class NbtVoid implements ClientModInitializer {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			// Do actions with void in separate thread so it doesn't lag
 			while (KEYBIND_CLEAR.wasPressed()) {
-				Thread thread = new Thread(CLEAR_RUNNABLE);
-				thread.start();
+				new Thread(CLEAR_RUNNABLE).start();
 			}
 
 			while (KEYBIND_TOGGLE.wasPressed()) {
@@ -128,18 +125,15 @@ public class NbtVoid implements ClientModInitializer {
 			}
 
 			while (KEYBIND_SAVE.wasPressed()) {
-				Thread thread = new Thread(SAVE_RUNNABLE);
-				thread.start();
+				new Thread(SAVE_RUNNABLE).start();
 			}
 
 			while (KEYBIND_LOAD.wasPressed()) {
-				Thread thread = new Thread(LOAD_RUNNABLE);
-				thread.start();
+				new Thread(LOAD_RUNNABLE).start();
 			}
 
 			while (KEYBIND_SCAN.wasPressed()) {
-				Thread thread = new Thread(VoidController.SCAN_WORLD_RUNNABLE);
-				thread.start();
+				new Thread(VoidController.SCAN_WORLD_RUNNABLE).start();
 			}
 		});
 

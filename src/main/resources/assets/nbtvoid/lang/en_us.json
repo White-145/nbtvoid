@@ -1,6 +1,10 @@
 {
     "itemGroup.nbtvoid.void": "NBT Void",
+    "itemGroup.nbtvoid.infoItem": "Loading NBT void, please wait...",
     "config.nbtvoid.title": "Configure NBT Void",
+    "config.nbtvoid.category.general": "General",
+    "config.nbtvoid.category.search": "Search",
+    "config.nbtvoid.category.exceptions": "Exceptions",
     "config.nbtvoid.isEnabled": "Enabled",
     "config.nbtvoid.isEnabledTooltip": "If disabled, void will not save any items",
     "config.nbtvoid.reducedSources": "Reduced Sources",

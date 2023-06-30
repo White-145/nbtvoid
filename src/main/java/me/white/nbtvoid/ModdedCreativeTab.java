@@ -8,6 +8,7 @@ import java.util.Map;
 import com.google.common.base.Function;
 
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
+import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen.CreativeScreenHandler;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
@@ -19,6 +20,26 @@ import net.minecraft.util.Identifier;
 
 // Was planning to do more tabs in this mod, maybe in future
 public class ModdedCreativeTab {
+    public static class AsyncSearcher implements Runnable {
+        CreativeScreenHandler handler;
+        Function<String, List<ItemStack>> searchProvider;
+        String query;
+
+        public AsyncSearcher(CreativeScreenHandler handler, Function<String, List<ItemStack>> searchProvider, String query) {
+            this.handler = handler;
+            this.searchProvider = searchProvider;
+            this.query = query;
+        }
+
+        @Override
+        public void run() {
+            List<ItemStack> items = searchProvider.apply(query);
+            handler.itemList.clear();
+            handler.itemList.addAll(items);
+            handler.scrollItems(0);
+        }
+    }
+
     public static enum Type {
         NORMAL,
         VOID

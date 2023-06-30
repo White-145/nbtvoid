@@ -14,7 +14,6 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.text.Text;
 
-// copied from (i forgor from 💀)
 @Environment(EnvType.CLIENT)
 public class Config {
     public enum CheckType {
@@ -54,8 +53,8 @@ public class Config {
     private static Config INSTANCE;
 
     public static final String DEFAULT_DEFAULT_SEARCH_QUERY = "";
-    public static final int DEFAULT_MAX_DISPLAY_ITEMS = 128;
-    public static final int DEFAULT_MAX_STORED_ITEMS = 1024;
+    public static final int DEFAULT_MAX_DISPLAY_ITEMS = 1024;
+    public static final int DEFAULT_MAX_STORED_ITEMS = 8192;
     public static final SortType DEFAULT_SORT_TYPE = SortType.ALPHABETIC;
     public static final CheckType DEFAULT_NAME_CHECK = CheckType.ANY;
     public static final CheckType DEFAULT_ID_CHECK = CheckType.ANY;
@@ -75,13 +74,13 @@ public class Config {
 		"Damage",
         "CustomCreativeLock"
 	});
+    // Not implemented yet
     public static final List<String> DEFAULT_IGNORE_ITEMS = Arrays.asList(new String[] {
         "paper{CustomCreativeLock:{}}"
     });
 
-    // That's alot, I didn't stress test it
-    public static final int MAX_MAX_DISPLAY_ITEMS = 4096;
-    public static final int MAX_MAX_STORED_ITEMS = 65536;
+    public static final int MAX_MAX_DISPLAY_ITEMS = 32768;
+    public static final int MAX_MAX_STORED_ITEMS = 32768;
 	
 	private String defaultSearchQuery = DEFAULT_DEFAULT_SEARCH_QUERY;
 	private int maxDisplayItems = DEFAULT_MAX_DISPLAY_ITEMS;
@@ -125,6 +124,7 @@ public class Config {
     }
 
     public static Config getInstance() {
+        if (INSTANCE == null) return load();
         return INSTANCE;
     }
 
