@@ -202,6 +202,7 @@ public class ModMenuIntegration implements ModMenuApi {
                 .option(removeNbtOption)
                 .build()
             )
+            .save(Config::save)
             .build()
             .generateScreen(parent);
     }
