@@ -2,16 +2,19 @@ package me.white.nbtvoid;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.mojang.brigadier.StringReader;
 
 import net.fabricmc.api.Environment;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.command.argument.NbtPathArgumentType;
 import net.minecraft.text.Text;
 
 @Environment(EnvType.CLIENT)
@@ -75,9 +78,9 @@ public class Config {
         "CustomCreativeLock"
 	});
     // Not implemented yet
-    public static final List<String> DEFAULT_IGNORE_ITEMS = Arrays.asList(new String[] {
-        "paper{CustomCreativeLock:{}}"
-    });
+    // public static final List<String> DEFAULT_IGNORE_ITEMS = Arrays.asList(new String[] {
+    //     "paper{CustomCreativeLock:{}}"
+    // });
 
     public static final int MAX_MAX_DISPLAY_ITEMS = 32768;
     public static final int MAX_MAX_STORED_ITEMS = 32768;
@@ -89,13 +92,13 @@ public class Config {
 	private CheckType nameCheck = DEFAULT_NAME_CHECK;
 	private CheckType idCheck = DEFAULT_ID_CHECK;
 	private CheckType nbtCheck = DEFAULT_NBT_CHECK;
-    private CheckType ignoreItemsCheck = DEFAULT_IGNORE_ITEMS_CHECK;
+    // private CheckType ignoreItemsCheck = DEFAULT_IGNORE_ITEMS_CHECK;
     private boolean doSave = DEFAULT_DO_SAVE;
     private boolean isEnabled = DEFAULT_IS_ENABLED;
     private boolean doDynamicUpdate = DEFAULT_DO_DYNAMIC_UPDATE;
 	private List<String> ignoreNbt = DEFAULT_IGNORE_NBT;
 	private List<String> removeNbt = DEFAULT_REMOVE_NBT;
-    private List<String> ignoreItems = DEFAULT_IGNORE_ITEMS;
+    // private List<String> ignoreItems = DEFAULT_IGNORE_ITEMS;
 
     private Config() {}
 
@@ -156,9 +159,9 @@ public class Config {
         return nbtCheck;
     }
 
-    public CheckType getIgnoreItemsCheck() {
-        return ignoreItemsCheck;
-    }
+    // public CheckType getIgnoreItemsCheck() {
+    //     return ignoreItemsCheck;
+    // }
 
     public boolean getDoSave() {
         return doSave;
@@ -180,9 +183,9 @@ public class Config {
         return removeNbt;
     }
 
-    public List<String> getIgnoreItems() {
-        return ignoreItems;
-    }
+    // public List<String> getIgnoreItems() {
+    //     return ignoreItems;
+    // }
 
     public void setDefaultSearchQuery(String defaultSearchQuery) {
         this.defaultSearchQuery = defaultSearchQuery;
@@ -212,9 +215,9 @@ public class Config {
         this.nbtCheck = nbtCheck;
     }
 
-    public void setIgnoreItemsCheck(CheckType ignoreItemsCheck) {
-        this.ignoreItemsCheck = ignoreItemsCheck;
-    }
+    // public void setIgnoreItemsCheck(CheckType ignoreItemsCheck) {
+    //     this.ignoreItemsCheck = ignoreItemsCheck;
+    // }
 
     public void setDoSave(boolean doSave) {
         this.doSave = doSave;
@@ -229,14 +232,32 @@ public class Config {
     }
 
     public void setIgnoreNbt(List<String> ignoreNbt) {
-        this.ignoreNbt = ignoreNbt;
+        List<String> checkedList = new ArrayList<>();
+        for (String entry : ignoreNbt) {
+            try {
+                new NbtPathArgumentType().parse(new StringReader(entry));
+                checkedList.add(entry);
+            } catch (Exception e) {
+                NbtVoid.LOGGER.error("Invalid Ignore NBT '" + entry + "': ", e);
+            }
+        }
+        this.ignoreNbt = checkedList;
     }
 
     public void setRemoveNbt(List<String> removeNbt) {
-        this.removeNbt = removeNbt;
+        List<String> checkedList = new ArrayList<>();
+        for (String entry : removeNbt) {
+            try {
+                new NbtPathArgumentType().parse(new StringReader(entry));
+                checkedList.add(entry);
+            } catch (Exception e) {
+                NbtVoid.LOGGER.error("Invalid Remove NBT '" + entry + "': ", e);
+            }
+        }
+        this.removeNbt = checkedList;
     }
 
-    public void setIgnoreItems(List<String> ignoreItems) {
-        this.ignoreItems = ignoreItems;
-    }
+    // public void setIgnoreItems(List<String> ignoreItems) {
+    //     this.ignoreItems = ignoreItems;
+    // }
 }

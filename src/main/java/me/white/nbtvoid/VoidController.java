@@ -77,13 +77,16 @@ public class VoidController {
 		@Override
 		public void run() {
 			MinecraftClient client = MinecraftClient.getInstance();
+			if (client == null) return;
 			ClientPlayerEntity player = client.player;
-			PlayerInventory inventory = client.player.getInventory();
-			addItems(player.getArmorItems());
-			addItems(inventory.offHand);
-			addItems(inventory.main);
-			addItems(player.getEnderChestInventory().stacks);
-
+			if (player != null) {
+				PlayerInventory inventory = client.player.getInventory();
+				addItems(player.getArmorItems());
+				addItems(inventory.offHand);
+				addItems(inventory.main);
+				addItems(player.getEnderChestInventory().stacks);
+			}
+			if (client.getNetworkHandler() == null || client.getNetworkHandler().getWorld() == null) return;
 			for (Entity entity : client.getNetworkHandler().getWorld().getEntities()) {
 				addItems(entity.getArmorItems());
 				addItems(entity.getHandItems());
