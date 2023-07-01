@@ -1,5 +1,7 @@
 package me.white.nbtvoid.mixin;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -52,8 +54,13 @@ public abstract class CreativeInventoryScreenMixin {
             infoItem.setSubNbt("CustomCreativeLock", new NbtCompound());
 
             itemList.clear();
-            itemList.add(infoItem);
-            new Thread(new ModdedCreativeTab.AsyncSearcher(handler, moddedTab.getSearchProvider(), query)).start();
+            if (Config.getInstance().getDoAsyncSearch()) {
+                itemList.add(infoItem);
+                CompletableFuture.runAsync(new ModdedCreativeTab.AsyncSearcher(handler, moddedTab.getSearchProvider(), query));
+            } else {
+                itemList.addAll(moddedTab.getSearchProvider().apply(query));
+                handler.scrollItems(0);
+            }
 
             scrollPosition = 0.0f;
         }

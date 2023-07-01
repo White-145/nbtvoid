@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -66,6 +67,7 @@ public class Config {
     public static final boolean DEFAULT_DO_SAVE = true;
     public static final boolean DEFAULT_IS_ENABLED = true;
     public static final boolean DEFAULT_DO_DYNAMIC_UPDATE = false;
+    public static final boolean DEFAULT_DO_ASYNC_SEARCH = true;
     public static final List<String> DEFAULT_IGNORE_NBT = Arrays.asList(new String[] {
 		"Enchantment",
         "HideFlags",
@@ -96,6 +98,7 @@ public class Config {
     private boolean doSave = DEFAULT_DO_SAVE;
     private boolean isEnabled = DEFAULT_IS_ENABLED;
     private boolean doDynamicUpdate = DEFAULT_DO_DYNAMIC_UPDATE;
+    private boolean doAsyncSearch = DEFAULT_DO_ASYNC_SEARCH;
 	private List<String> ignoreNbt = DEFAULT_IGNORE_NBT;
 	private List<String> removeNbt = DEFAULT_REMOVE_NBT;
     // private List<String> ignoreItems = DEFAULT_IGNORE_ITEMS;
@@ -175,6 +178,10 @@ public class Config {
         return doDynamicUpdate;
     }
 
+    public boolean getDoAsyncSearch() {
+        return doAsyncSearch;
+    }
+
     public List<String> getIgnoreNbt() {
         return ignoreNbt;
     }
@@ -197,6 +204,7 @@ public class Config {
 
     public void setMaxStoredItems(int maxStoredItems) {
         this.maxStoredItems = maxStoredItems;
+        CompletableFuture.runAsync(VoidController::updateExceptions);
     }
 
     public void setSortType(SortType sortType) {
@@ -229,6 +237,11 @@ public class Config {
 
     public void setDoDynamicUpdate(boolean doDynamicUpdate) {
         this.doDynamicUpdate = doDynamicUpdate;
+        if (getDoDynamicUpdate()) CompletableFuture.runAsync(VoidController::updateExceptions);
+    }
+
+    public void setDoAsyncSearch(boolean doAsyncSearch) {
+        this.doAsyncSearch = doAsyncSearch;
     }
 
     public void setIgnoreNbt(List<String> ignoreNbt) {
@@ -242,6 +255,7 @@ public class Config {
             }
         }
         this.ignoreNbt = checkedList;
+        if (getDoDynamicUpdate()) CompletableFuture.runAsync(VoidController::updateExceptions);
     }
 
     public void setRemoveNbt(List<String> removeNbt) {
@@ -255,6 +269,7 @@ public class Config {
             }
         }
         this.removeNbt = checkedList;
+        if (getDoDynamicUpdate()) CompletableFuture.runAsync(VoidController::updateExceptions);
     }
 
     // public void setIgnoreItems(List<String> ignoreItems) {

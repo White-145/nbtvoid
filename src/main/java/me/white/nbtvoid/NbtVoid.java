@@ -14,6 +14,7 @@ import net.minecraft.util.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
@@ -59,27 +60,6 @@ public class NbtVoid implements ClientModInitializer {
 		NbtVoid.localized("category", "void")
 	));
 
-	public static final Runnable CLEAR_RUNNABLE = new Runnable() {
-		@Override
-		public void run() {
-			VoidController.clear();
-		}
-	};
-
-	public static final Runnable SAVE_RUNNABLE = new Runnable() {
-		@Override
-		public void run() {
-			VoidController.save();
-		}
-	};
-
-	public static final Runnable LOAD_RUNNABLE = new Runnable() {
-		@Override
-		public void run() {
-			VoidController.load();
-		}
-	};
-
 	public final ModdedCreativeTab VOID_TAB = ModdedCreativeTab.builder(new Identifier(MOD_ID, "void"))
 		.displayName(Text.translatable(NbtVoid.localized("itemGroup", "void")))
 		.type(ModdedCreativeTab.Type.VOID)
@@ -115,9 +95,9 @@ public class NbtVoid implements ClientModInitializer {
 		}));
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
-			// Do actions with void in separate thread so it doesn't lag
+			// Do actions with void in async so it doesn't lag
 			while (KEYBIND_CLEAR.wasPressed()) {
-				new Thread(CLEAR_RUNNABLE).start();
+				CompletableFuture.runAsync(VoidController::clear);
 			}
 
 			while (KEYBIND_TOGGLE.wasPressed()) {
@@ -125,15 +105,15 @@ public class NbtVoid implements ClientModInitializer {
 			}
 
 			while (KEYBIND_SAVE.wasPressed()) {
-				new Thread(SAVE_RUNNABLE).start();
+				CompletableFuture.runAsync(VoidController::save);
 			}
 
 			while (KEYBIND_LOAD.wasPressed()) {
-				new Thread(LOAD_RUNNABLE).start();
+				CompletableFuture.runAsync(VoidController::load);
 			}
 
 			while (KEYBIND_SCAN.wasPressed()) {
-				new Thread(VoidController.SCAN_WORLD_RUNNABLE).start();
+				CompletableFuture.runAsync(VoidController::scan);
 			}
 		});
 

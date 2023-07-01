@@ -50,63 +50,52 @@ public class VoidController {
 	public static List<VoidEntry> nbtVoid = new ArrayList<>();
 	public static boolean updating = false;
 
-	public static final Runnable UPDATE_RUNNABLE = new Runnable() {
-		@Override
-		public void run() {
-			if (!Config.getInstance().getDoDynamicUpdate()) return;
-			// prevent second run from config menu
-			if (updating) return;
-			updating = true;
-			List<VoidEntry> oldVoid = new ArrayList<>(nbtVoid);
-			clear();
-			for (VoidEntry entry : oldVoid) addEntry(entry);
-			SCAN_WORLD_RUNNABLE.run();
-			updating = false;
+	public static void updateExceptions() {
+		// prevent second run from config menu
+		if (updating) return;
+		updating = true;
+		List<VoidEntry> oldVoid = new ArrayList<>(nbtVoid);
+		clear();
+		for (VoidEntry entry : oldVoid) addEntry(entry);
+		updating = false;
+		int overflow = nbtVoid.size() - Config.getInstance().getMaxStoredItems() * 9;
+		for (int i = 0; i < overflow; ++i) {
+			removeOldest();
 		}
-	};
-
-	public static final Runnable UPDATE_MAX_STORED_ITEMS_RUNNABLE = new Runnable() {
-		@Override
-		public void run() {
-			int newMaxStored = Config.getInstance().getMaxStoredItems();
-			if (nbtVoid.size() > newMaxStored) nbtVoid = nbtVoid.subList(0, newMaxStored);
-		}
-	};
+		scan();
+	}
 	
-	public static final Runnable SCAN_WORLD_RUNNABLE = new Runnable() {
-		@Override
-		public void run() {
-			MinecraftClient client = MinecraftClient.getInstance();
-			if (client == null) return;
-			ClientPlayerEntity player = client.player;
-			if (player != null) {
-				PlayerInventory inventory = client.player.getInventory();
-				addItems(player.getArmorItems());
-				addItems(inventory.offHand);
-				addItems(inventory.main);
-				addItems(player.getEnderChestInventory().stacks);
+	public static void scan() {
+		MinecraftClient client = MinecraftClient.getInstance();
+		if (client == null) return;
+		ClientPlayerEntity player = client.player;
+		if (player != null) {
+			PlayerInventory inventory = client.player.getInventory();
+			addItems(player.getArmorItems());
+			addItems(inventory.offHand);
+			addItems(inventory.main);
+			addItems(player.getEnderChestInventory().stacks);
+		}
+		if (client.getNetworkHandler() == null || client.getNetworkHandler().getWorld() == null) return;
+		for (Entity entity : client.getNetworkHandler().getWorld().getEntities()) {
+			addItems(entity.getArmorItems());
+			addItems(entity.getHandItems());
+			addItems(entity.getItemsEquipped());
+			if (entity instanceof ItemFrameEntity itemFrameEntity) {
+				ItemStack item = itemFrameEntity.getHeldItemStack();
+				if (item != null)
+					addItem(item);
 			}
-			if (client.getNetworkHandler() == null || client.getNetworkHandler().getWorld() == null) return;
-			for (Entity entity : client.getNetworkHandler().getWorld().getEntities()) {
-				addItems(entity.getArmorItems());
-				addItems(entity.getHandItems());
-				addItems(entity.getItemsEquipped());
-				if (entity instanceof ItemFrameEntity itemFrameEntity) {
-					ItemStack item = itemFrameEntity.getHeldItemStack();
-					if (item != null)
-						addItem(item);
-				}
-				if (entity instanceof ItemEntity itemEntity) {
-					ItemStack item = itemEntity.getStack();
-					if (item != null)
-						addItem(item);
-				}
-				if (entity instanceof ItemDisplayEntity itemDisplayEntity) {
-					addItem(itemDisplayEntity.getStackReference(0).get());
-				}
+			if (entity instanceof ItemEntity itemEntity) {
+				ItemStack item = itemEntity.getStack();
+				if (item != null)
+					addItem(item);
+			}
+			if (entity instanceof ItemDisplayEntity itemDisplayEntity) {
+				addItem(itemDisplayEntity.getStackReference(0).get());
 			}
 		}
-	};
+	}
 
 	public static void load() {
 		clear();
@@ -177,7 +166,7 @@ public class VoidController {
 		nbtVoid.add(0, new VoidEntry(newItem));
 
 		if (nbtVoid.size() > Config.getInstance().getMaxStoredItems() * 9) {
-			nbtVoid = nbtVoid.subList(0, Config.getInstance().getMaxStoredItems() * 9);
+			removeOldest();
 		}
 	}
 
@@ -195,10 +184,18 @@ public class VoidController {
 		}
 
 		nbtVoid.add(new VoidEntry(newItem, entry.getTime()));
+	}
 
-		if (nbtVoid.size() > Config.getInstance().getMaxStoredItems() * 9) {
-			nbtVoid = nbtVoid.subList(0, Config.getInstance().getMaxStoredItems() * 9);
+	private static void removeOldest() {
+		int oldest = -1;
+		Instant oldestTime = null;
+		for (int i = 0; i < nbtVoid.size(); ++i) {
+			if (oldestTime == null || nbtVoid.get(i).getTime().compareTo(oldestTime) < 0) {
+				oldest = i;
+				oldestTime = nbtVoid.get(i).getTime();
+			}
 		}
+		nbtVoid.remove(oldest);
 	}
 
 	private static boolean isIgnored(NbtCompound nbt) {

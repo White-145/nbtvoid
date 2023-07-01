@@ -4,6 +4,7 @@ import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
 
 import dev.isxander.yacl3.api.Binding;
+import dev.isxander.yacl3.api.ButtonOption;
 import dev.isxander.yacl3.api.ConfigCategory;
 import dev.isxander.yacl3.api.ListOption;
 import dev.isxander.yacl3.api.Option;
@@ -22,49 +23,59 @@ import net.minecraft.text.Text;
 public class ModMenuIntegration implements ModMenuApi {
     private static Option<Boolean> isEnabledOption = Option.<Boolean>createBuilder()
         .name(Text.translatable(NbtVoid.localized("config", "isEnabled")))
-        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "isEnabledTooltip"))))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "isEnabledDescription"))))
         .binding(Binding.generic(
             Config.DEFAULT_IS_ENABLED,
             Config.getInstance()::getIsEnabled,
             Config.getInstance()::setIsEnabled
         ))
         .controller(opt -> BooleanControllerBuilder.create(opt)
-            .onOffFormatter()
+            .yesNoFormatter()
         )
         .build();
         
     private static Option<Boolean> doSaveOption = Option.<Boolean>createBuilder()
         .name(Text.translatable(NbtVoid.localized("config", "doSave")))
-        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "doSaveTooltip"))))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "doSaveDescription"))))
         .binding(Binding.generic(
             Config.DEFAULT_DO_SAVE,
             Config.getInstance()::getDoSave,
             Config.getInstance()::setDoSave
         ))
         .controller(opt -> BooleanControllerBuilder.create(opt)
-            .onOffFormatter()
+            .yesNoFormatter()
         )
         .build();
 
     private static Option<Boolean> doDynamicUpdateOption = Option.<Boolean>createBuilder()
         .name(Text.translatable(NbtVoid.localized("config", "doDynamicUpdate")))
-        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "doDynamicUpdateTooltip"))))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "doDynamicUpdateDescription"))))
         .binding(Binding.generic(
             Config.DEFAULT_DO_DYNAMIC_UPDATE,
             Config.getInstance()::getDoDynamicUpdate,
-            value -> {
-                Config.getInstance().setDoDynamicUpdate(value);
-                new Thread(VoidController.UPDATE_RUNNABLE).start();
-            }
+            Config.getInstance()::setDoDynamicUpdate
         ))
         .controller(opt -> BooleanControllerBuilder.create(opt)
-            .trueFalseFormatter()
+            .yesNoFormatter()
+        )
+        .build();
+
+    private static Option<Boolean> doAsyncSearchOption = Option.<Boolean>createBuilder()
+        .name(Text.translatable(NbtVoid.localized("config", "doAsyncSearch")))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "doAsyncSearchDescription"))))
+        .binding(Binding.generic(
+            Config.DEFAULT_DO_ASYNC_SEARCH,
+            Config.getInstance()::getDoAsyncSearch,
+            Config.getInstance()::setDoAsyncSearch
+        ))
+        .controller(opt -> BooleanControllerBuilder.create(opt)
+            .yesNoFormatter()
         )
         .build();
 
     private static Option<Integer> maxDisplayItemsOption = Option.<Integer>createBuilder()
         .name(Text.translatable(NbtVoid.localized("config", "maxDisplayItems")))
-        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "maxDisplayItemsTooltip"))))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "maxDisplayItemsDescription"))))
         .binding(Binding.generic(
             Config.DEFAULT_MAX_DISPLAY_ITEMS,
             Config.getInstance()::getMaxDisplayItems,
@@ -78,14 +89,11 @@ public class ModMenuIntegration implements ModMenuApi {
     
     private static Option<Integer> maxStoredItemsOption = Option.<Integer>createBuilder()
         .name(Text.translatable(NbtVoid.localized("config", "maxStoredItems")))
-        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "maxStoredItemsTooltip"))))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "maxStoredItemsDescription"))))
         .binding(Binding.generic(
             Config.DEFAULT_MAX_STORED_ITEMS,
             Config.getInstance()::getMaxStoredItems,
-            value -> {
-                Config.getInstance().setMaxStoredItems(value);
-                new Thread(VoidController.UPDATE_MAX_STORED_ITEMS_RUNNABLE).start();
-            }
+            Config.getInstance()::setMaxStoredItems
         ))
         .controller(opt -> IntegerFieldControllerBuilder.create(opt)
             .min(0)
@@ -95,7 +103,7 @@ public class ModMenuIntegration implements ModMenuApi {
     
     private static Option<String> defaultSearchQueryOption = Option.<String>createBuilder()
         .name(Text.translatable(NbtVoid.localized("config", "defaultSearchQuery")))
-        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "defaultSearchQueryTooltip"))))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "defaultSearchQueryDescription"))))
         .binding(Binding.generic(
             Config.DEFAULT_DEFAULT_SEARCH_QUERY,
             Config.getInstance()::getDefaultSearchQuery,
@@ -106,7 +114,7 @@ public class ModMenuIntegration implements ModMenuApi {
     
     private static Option<SortType> sortTypeOption = Option.<SortType>createBuilder()
         .name(Text.translatable(NbtVoid.localized("config", "sortType")))
-        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "sortTypeTooltip"))))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "sortTypeDescription"))))
         .binding(Binding.generic(
             Config.DEFAULT_SORT_TYPE,
             Config.getInstance()::getSortType,
@@ -120,7 +128,7 @@ public class ModMenuIntegration implements ModMenuApi {
     
     private static Option<CheckType> nameCheckOption = Option.<CheckType>createBuilder()
         .name(Text.translatable(NbtVoid.localized("config", "nameCheck")))
-        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "nameCheckTooltip"))))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "nameCheckDescription"))))
         .binding(Binding.generic(
             Config.DEFAULT_NAME_CHECK,
             Config.getInstance()::getNameCheck,
@@ -134,7 +142,7 @@ public class ModMenuIntegration implements ModMenuApi {
     
     private static Option<CheckType> nbtCheckOption = Option.<CheckType>createBuilder()
         .name(Text.translatable(NbtVoid.localized("config", "nbtCheck")))
-        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "nbtCheckTooltip"))))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "nbtCheckDescription"))))
         .binding(Binding.generic(
             Config.DEFAULT_NBT_CHECK,
             Config.getInstance()::getNbtCheck,
@@ -148,14 +156,11 @@ public class ModMenuIntegration implements ModMenuApi {
     
     private static ListOption<String> ignoreNbtOption = ListOption.<String>createBuilder()
         .name(Text.translatable(NbtVoid.localized("config", "ignoreNbt")))
-        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "ignoreNbtTooltip"))))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "ignoreNbtDescription"))))
         .binding(Binding.generic(
             Config.DEFAULT_IGNORE_NBT,
             Config.getInstance()::getIgnoreNbt,
-            value -> {
-                Config.getInstance().setIgnoreNbt(value);
-                new Thread(VoidController.UPDATE_RUNNABLE).start();
-            }
+            Config.getInstance()::setIgnoreNbt
         ))
         .controller(StringControllerBuilder::create)
         .initial("")
@@ -163,17 +168,38 @@ public class ModMenuIntegration implements ModMenuApi {
 
     private static ListOption<String> removeNbtOption = ListOption.<String>createBuilder()
         .name(Text.translatable(NbtVoid.localized("config", "removeNbt")))
-        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "removeNbtTooltip"))))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "removeNbtDescription"))))
         .binding(Binding.generic(
             Config.DEFAULT_REMOVE_NBT,
             Config.getInstance()::getRemoveNbt,
-            value -> {
-                Config.getInstance().setRemoveNbt(value);
-                new Thread(VoidController.UPDATE_RUNNABLE).start();
-            }
+            Config.getInstance()::setRemoveNbt
         ))
         .controller(StringControllerBuilder::create)
         .initial("")
+        .build();
+    
+    private static ButtonOption clearVoidButton = ButtonOption.createBuilder()
+        .name(Text.translatable(NbtVoid.localized("config", "clearVoid")))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "clearVoidDescription"))))
+        .action((screen, opt) -> VoidController.clear())
+        .build();
+
+    private static ButtonOption loadVoidButton = ButtonOption.createBuilder()
+        .name(Text.translatable(NbtVoid.localized("config", "loadVoid")))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "loadVoidDescription"))))
+        .action((screen, opt) -> VoidController.load())
+        .build();
+
+    private static ButtonOption saveVoidButton = ButtonOption.createBuilder()
+        .name(Text.translatable(NbtVoid.localized("config", "saveVoid")))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "saveVoidDescription"))))
+        .action((screen, opt) -> VoidController.save())
+        .build();
+
+    private static ButtonOption updateExceptionsButton = ButtonOption.createBuilder()
+        .name(Text.translatable(NbtVoid.localized("config", "updateExceptions")))
+        .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "updateExceptionsDescription"))))
+        .action((screen, opt) -> VoidController.updateExceptions())
         .build();
 
     public static Screen getConfigScreen(Screen parent) {
@@ -185,11 +211,15 @@ public class ModMenuIntegration implements ModMenuApi {
                 .option(doSaveOption)
                 .option(maxDisplayItemsOption)
                 .option(maxStoredItemsOption)
+                .option(clearVoidButton)
+                .option(loadVoidButton)
+                .option(saveVoidButton)
                 .build()
             )
             .category(ConfigCategory.createBuilder()
                 .name(Text.translatable(NbtVoid.localized("config", "category.search")))
                 .option(defaultSearchQueryOption)
+                .option(doAsyncSearchOption)
                 .option(nameCheckOption)
                 .option(nbtCheckOption)
                 .option(sortTypeOption)
@@ -200,6 +230,7 @@ public class ModMenuIntegration implements ModMenuApi {
                 .option(doDynamicUpdateOption)
                 .option(ignoreNbtOption)
                 .option(removeNbtOption)
+                .option(updateExceptionsButton)
                 .build()
             )
             .save(Config::save)
