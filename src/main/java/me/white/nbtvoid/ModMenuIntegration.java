@@ -1,5 +1,7 @@
 package me.white.nbtvoid;
 
+import java.util.concurrent.CompletableFuture;
+
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
 
@@ -181,25 +183,25 @@ public class ModMenuIntegration implements ModMenuApi {
     private static ButtonOption clearVoidButton = ButtonOption.createBuilder()
         .name(Text.translatable(NbtVoid.localized("config", "clearVoid")))
         .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "clearVoidDescription"))))
-        .action((screen, opt) -> VoidController.clear())
+        .action((screen, opt) -> CompletableFuture.runAsync(VoidController::clear))
         .build();
 
     private static ButtonOption loadVoidButton = ButtonOption.createBuilder()
         .name(Text.translatable(NbtVoid.localized("config", "loadVoid")))
         .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "loadVoidDescription"))))
-        .action((screen, opt) -> VoidController.load())
+        .action((screen, opt) -> CompletableFuture.runAsync(VoidController::load))
         .build();
 
     private static ButtonOption saveVoidButton = ButtonOption.createBuilder()
         .name(Text.translatable(NbtVoid.localized("config", "saveVoid")))
         .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "saveVoidDescription"))))
-        .action((screen, opt) -> VoidController.save())
+        .action((screen, opt) -> CompletableFuture.runAsync(VoidController::save))
         .build();
 
     private static ButtonOption updateExceptionsButton = ButtonOption.createBuilder()
         .name(Text.translatable(NbtVoid.localized("config", "updateExceptions")))
         .description(OptionDescription.of(Text.translatable(NbtVoid.localized("config", "updateExceptionsDescription"))))
-        .action((screen, opt) -> VoidController.updateExceptions())
+        .action((screen, opt) -> CompletableFuture.runAsync(VoidController::updateExceptions))
         .build();
 
     public static Screen getConfigScreen(Screen parent) {
@@ -240,10 +242,7 @@ public class ModMenuIntegration implements ModMenuApi {
 
     @Override
     public ConfigScreenFactory<?> getModConfigScreenFactory() {
-        if (FabricLoader.getInstance().isModLoaded("yet_another_config_lib_v3")) {
-            return ModMenuIntegration::getConfigScreen;
-		} else {
-			return parent -> null;
-		}
+        if (FabricLoader.getInstance().isModLoaded("yet_another_config_lib_v3")) return ModMenuIntegration::getConfigScreen;
+		return parent -> null;
     }
 }

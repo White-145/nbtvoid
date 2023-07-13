@@ -22,18 +22,19 @@ import net.minecraft.util.Identifier;
 public class ModdedCreativeTab {
     public static class AsyncSearcher implements Runnable {
         CreativeScreenHandler handler;
-        Function<String, List<ItemStack>> searchProvider;
+        ModdedCreativeTab moddedTab;
         String query;
 
-        public AsyncSearcher(CreativeScreenHandler handler, Function<String, List<ItemStack>> searchProvider, String query) {
+        public AsyncSearcher(CreativeScreenHandler handler, ModdedCreativeTab moddedTab, String query) {
             this.handler = handler;
-            this.searchProvider = searchProvider;
+            this.moddedTab = moddedTab;
             this.query = query;
         }
 
         @Override
         public void run() {
-            List<ItemStack> items = searchProvider.apply(query);
+            List<ItemStack> items = moddedTab.searchProvider.apply(query);
+            if (moddedTab.searcher != this) return;
             handler.itemList.clear();
             handler.itemList.addAll(items);
             handler.scrollItems(0);
@@ -50,6 +51,7 @@ public class ModdedCreativeTab {
     public ItemGroup itemGroup;
     public Type type;
     public Function<String, List<ItemStack>> searchProvider;
+    public AsyncSearcher searcher;
 
     public static class Builder {
         private Type type;

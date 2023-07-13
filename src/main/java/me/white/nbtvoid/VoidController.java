@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.command.argument.NbtPathArgumentType;
@@ -50,6 +51,7 @@ public class VoidController {
 	public static List<VoidEntry> nbtVoid = new ArrayList<>();
 	public static boolean updating = false;
 
+	// TODO: this is hella slow
 	public static void updateExceptions() {
 		// prevent second run from config menu
 		if (updating) return;
@@ -59,9 +61,7 @@ public class VoidController {
 		for (VoidEntry entry : oldVoid) addEntry(entry);
 		updating = false;
 		int overflow = nbtVoid.size() - Config.getInstance().getMaxStoredItems() * 9;
-		for (int i = 0; i < overflow; ++i) {
-			removeOldest();
-		}
+		if (overflow > 0) nbtVoid = nbtVoid.subList(0, Config.getInstance().getMaxStoredItems());
 		scan();
 	}
 	
@@ -110,8 +110,17 @@ public class VoidController {
 			} catch (Exception e) {
 				NbtVoid.LOGGER.error("Couldn't load void file: " + e);
 			}
+			nbtVoid.sort(new Comparator<VoidEntry>() {
+				@Override
+				public int compare(VoidEntry first, VoidEntry second) {
+					return first.getTime().compareTo(second.getTime());
+				}
+			});
+
+			int maxStored = Config.getInstance().getMaxStoredItems() * 9;
+			if (nbtVoid.size() > maxStored) nbtVoid = nbtVoid.subList(0, maxStored);
+			NbtVoid.LOGGER.info("Loaded NBT void " + nbtVoid.size() + "/" + maxStored);
 		}
-		NbtVoid.LOGGER.info("Loaded NBT void");
 	}
 
 	public static void save() {
@@ -139,17 +148,16 @@ public class VoidController {
 	}
 
 	public static boolean itemEquals(ItemStack first, ItemStack second) {
-		return first.getItem().equals(second.getItem()) && first.getNbt().equals(second.getNbt());
+		return first.getItem().equals(second.getItem()) && removeIgnored(first.getNbt()).equals(removeIgnored(second.getNbt()));
 	}
 
 	public static void addItems(Iterable<ItemStack> items) {
 		if (items == null) return;
-		for (ItemStack item : items) {
-			addItem(item);
-		}
+		for (ItemStack item : items) addItem(item);
 	}
 
 	public static void addItem(ItemStack item) {
+		if (item == null) return;
 		if (item.isEmpty()) return;
 		if (!item.hasNbt()) return;
 
@@ -165,9 +173,8 @@ public class VoidController {
 
 		nbtVoid.add(0, new VoidEntry(newItem));
 
-		if (nbtVoid.size() > Config.getInstance().getMaxStoredItems() * 9) {
-			removeOldest();
-		}
+		int maxStored = Config.getInstance().getMaxStoredItems() * 9;
+		if (nbtVoid.size() > maxStored) nbtVoid = nbtVoid.subList(0, maxStored);
 	}
 
 	public static void addEntry(VoidEntry entry) {
@@ -179,30 +186,18 @@ public class VoidController {
 		ItemStack newItem = entry.getItem().copy();
 		newItem.setNbt(newNbt);
 
-		for (VoidEntry voidEntry : nbtVoid) {
-			if (itemEquals(newItem, voidEntry.getItem())) return;
-		}
+		for (VoidEntry voidEntry : nbtVoid) if (itemEquals(newItem, voidEntry.getItem())) return;
 
 		nbtVoid.add(new VoidEntry(newItem, entry.getTime()));
 	}
 
-	private static void removeOldest() {
-		int oldest = -1;
-		Instant oldestTime = null;
-		for (int i = 0; i < nbtVoid.size(); ++i) {
-			if (oldestTime == null || nbtVoid.get(i).getTime().compareTo(oldestTime) < 0) {
-				oldest = i;
-				oldestTime = nbtVoid.get(i).getTime();
-			}
-		}
-		nbtVoid.remove(oldest);
+	private static boolean isIgnored(NbtCompound nbt) {
+		NbtCompound newNbt = removeIgnored(nbt);
+		return newNbt == null || newNbt.isEmpty();
 	}
 
-	private static boolean isIgnored(NbtCompound nbt) {
-		if (nbt == null)
-			return true;
-		if (nbt.isEmpty())
-			return true;
+	private static NbtCompound removeIgnored(NbtCompound nbt) {
+		if (nbt == null || nbt.isEmpty()) return nbt;
 
 		NbtCompound newNbt = nbt.copy();
 		for (String ignoreNbt : Config.getInstance().getIgnoreNbt()) {
@@ -213,7 +208,7 @@ public class VoidController {
 				NbtVoid.LOGGER.error("Invalid ignore NBT '" + ignoreNbt + "': " + e);
 			}
 		}
-		return newNbt.isEmpty();
+		return newNbt;
 	}
 
 	private static NbtCompound removeRemoved(NbtCompound nbt) {
@@ -234,12 +229,10 @@ public class VoidController {
 
 		for (Text part : text.getWithStyle(Style.EMPTY)) {
 			HoverEvent hoverEvent = part.getStyle().getHoverEvent();
-			if (hoverEvent == null)
-				continue;
+			if (hoverEvent == null) continue;
 
 			HoverEvent.ItemStackContent item = hoverEvent.getValue(HoverEvent.Action.SHOW_ITEM);
-			if (item == null)
-				continue;
+			if (item == null) continue;
 
 			items.add(item.asStack());
 		}

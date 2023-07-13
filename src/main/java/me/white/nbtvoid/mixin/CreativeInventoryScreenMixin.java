@@ -53,10 +53,12 @@ public abstract class CreativeInventoryScreenMixin {
             infoItem.setCustomName(Text.translatable("itemGroup.nbtvoid.infoItem"));
             infoItem.setSubNbt("CustomCreativeLock", new NbtCompound());
 
+            // TODO: dont show items until update is finished
             itemList.clear();
             if (Config.getInstance().getDoAsyncSearch()) {
                 itemList.add(infoItem);
-                CompletableFuture.runAsync(new ModdedCreativeTab.AsyncSearcher(handler, moddedTab.getSearchProvider(), query));
+                moddedTab.searcher = new ModdedCreativeTab.AsyncSearcher(handler, moddedTab, query);
+                CompletableFuture.runAsync(moddedTab.searcher);
             } else {
                 itemList.addAll(moddedTab.getSearchProvider().apply(query));
                 handler.scrollItems(0);

@@ -92,6 +92,10 @@ public class SearchProvider {
                 }
             }
 
+            // extra careful here
+            if (entry == null) continue;
+            if (entry.getItem() == null) continue;
+            
             result.add(entry);
         }
 
