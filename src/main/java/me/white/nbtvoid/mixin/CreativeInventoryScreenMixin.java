@@ -54,6 +54,7 @@ public abstract class CreativeInventoryScreenMixin {
             infoItem.setSubNbt("CustomCreativeLock", new NbtCompound());
 
             // TODO: dont show items until update is finished
+            // TODO: completely redo
             itemList.clear();
             if (Config.getInstance().getDoAsyncSearch()) {
                 itemList.add(infoItem);

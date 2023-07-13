@@ -66,7 +66,7 @@ public class Config {
     public static final boolean DEFAULT_DO_SAVE = true;
     public static final boolean DEFAULT_IS_ENABLED = true;
     public static final boolean DEFAULT_DO_DYNAMIC_UPDATE = false;
-    public static final boolean DEFAULT_DO_ASYNC_SEARCH = true;
+    public static final boolean DEFAULT_DO_ASYNC_SEARCH = false;
     public static final List<String> DEFAULT_IGNORE_NBT = Arrays.asList(new String[] {
 		"Enchantment",
         "HideFlags",
