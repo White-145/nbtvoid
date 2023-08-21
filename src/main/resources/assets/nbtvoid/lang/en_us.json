@@ -30,7 +30,7 @@
     "config.nbtvoid.doDynamicUpdate": "Dynamic Update",
     "config.nbtvoid.doDynamicUpdateDescription": "Update void after saving to match current configuration",
     "config.nbtvoid.doAsyncSearch": "Async Search",
-    "config.nbtvoid.doAsyncSearchDescription": "Do searching in separate thread to avoid lag if you have a lot of items",
+    "config.nbtvoid.doAsyncSearchDescription": "Do searching in separate thread to avoid lag if you have a lot of items (/!\\ May crash your game)",
     "config.nbtvoid.clearVoid": "Clear Void",
     "config.nbtvoid.clearVoidDescription": "Clear NBT void, similiar to the \"Clear Void\" keybind",
     "config.nbtvoid.updateExceptions": "Update Exceptions",
@@ -49,5 +49,15 @@
     "key.nbtvoid.toggle": "Toggle Void",
     "key.nbtvoid.save": "Save Void to File",
     "key.nbtvoid.load": "Load Void from File",
-    "key.nbtvoid.scan": "Scan world for items"
+    "key.nbtvoid.scan": "Scan world for items",
+    "key.nbtvoid.clear.execute": "Cleared NBT void",
+    "key.nbtvoid.toggle.executeEnable": "Enabled NBT void",
+    "key.nbtvoid.toggle.executeDisable": "Disabled NBT void",
+    "key.nbtvoid.save.execute": "Saving NBT void to file...",
+    "key.nbtvoid.save.executeFinish": "Saved NBT void to file",
+    "key.nbtvoid.load.execute": "Loading NBT void from file...",
+    "key.nbtvoid.load.executeFinish": "Loaded NBT void from file",
+    "key.nbtvoid.scan.execute": "Scanning world for items...",
+    "key.nbtvoid.scan.executeFinish": "Scanned world for items",
+    "status.nbtvoid.updating": "NBT void is currently updating, please wait..."
 }

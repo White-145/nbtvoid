@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.concurrent.CompletableFuture;
 
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.command.argument.NbtPathArgumentType;
@@ -49,6 +50,7 @@ public class VoidController {
 	public static final Path PATH = FabricLoader.getInstance().getGameDir().resolve("void.nbt");
 
 	public static List<VoidEntry> nbtVoid = new ArrayList<>();
+	public static List<VoidEntry> pending = new ArrayList<>();
 	public static boolean updating = false;
 
 	// TODO: this is hella slow
@@ -59,13 +61,16 @@ public class VoidController {
 		List<VoidEntry> oldVoid = new ArrayList<>(nbtVoid);
 		clear();
 		for (VoidEntry entry : oldVoid) addEntry(entry);
-		updating = false;
 		int overflow = nbtVoid.size() - Config.getInstance().getMaxStoredItems() * 9;
 		if (overflow > 0) nbtVoid = nbtVoid.subList(0, Config.getInstance().getMaxStoredItems());
+		updating = false;
 		scan();
+		processPending();
 	}
 	
 	public static void scan() {
+		if (updating) return;
+		updating = true;
 		MinecraftClient client = MinecraftClient.getInstance();
 		if (client == null) return;
 		ClientPlayerEntity player = client.player;
@@ -95,35 +100,39 @@ public class VoidController {
 				addItem(itemDisplayEntity.getStackReference(0).get());
 			}
 		}
+		updating = false;
+		processPending();
 	}
 
 	public static void load() {
+		if (updating) return;
+		updating = true;
 		clear();
+		pending.clear();
 		if (Files.exists(PATH)) {
 			try {
 				NbtList nbt = NbtIo.read(PATH.toFile()).getList("entries", NbtElement.COMPOUND_TYPE);
 				for (NbtElement entry : nbt) {
 					NbtCompound item = ((NbtCompound)entry).getCompound("item");
 					long time = ((NbtCompound)entry).getLong("time");
-					addEntry(new VoidEntry(ItemStack.fromNbt((NbtCompound) item), Instant.ofEpochSecond(time)));
+					addEntry(new VoidEntry(ItemStack.fromNbt(item), Instant.ofEpochSecond(time)));
 				}
 			} catch (Exception e) {
 				NbtVoid.LOGGER.error("Couldn't load void file: " + e);
 			}
-			nbtVoid.sort(new Comparator<VoidEntry>() {
-				@Override
-				public int compare(VoidEntry first, VoidEntry second) {
-					return first.getTime().compareTo(second.getTime());
-				}
-			});
+			nbtVoid.sort(Comparator.comparing(VoidEntry::getTime));
 
 			int maxStored = Config.getInstance().getMaxStoredItems() * 9;
 			if (nbtVoid.size() > maxStored) nbtVoid = nbtVoid.subList(0, maxStored);
 			NbtVoid.LOGGER.info("Loaded NBT void " + nbtVoid.size() + "/" + maxStored);
 		}
+		updating = false;
+		processPending();
 	}
 
 	public static void save() {
+		if (updating) return;
+		updating = true;
 		try {
 			NbtCompound nbt = new NbtCompound();
 			NbtList entries = new NbtList();
@@ -144,6 +153,8 @@ public class VoidController {
 		} catch (Exception e) {
 			NbtVoid.LOGGER.error("Couldn't save void file: ", e);
 		}
+		updating = false;
+		processPending();
 		NbtVoid.LOGGER.info("Saved NBT void");
 	}
 
@@ -171,10 +182,19 @@ public class VoidController {
 			if (itemEquals(newItem, entry.getItem())) return;
 		}
 
-		nbtVoid.add(0, new VoidEntry(newItem));
+		VoidEntry entry = new VoidEntry(newItem);
+		if (updating) {
+			pending.add(entry);
+			return;
+		}
+		addEntryUnconditional(entry);
+	}
 
-		int maxStored = Config.getInstance().getMaxStoredItems() * 9;
-		if (nbtVoid.size() > maxStored) nbtVoid = nbtVoid.subList(0, maxStored);
+	public static void processPending() {
+		for (VoidEntry entry : pending) {
+			addEntryUnconditional(entry);
+		}
+		pending.clear();
 	}
 
 	public static void addEntry(VoidEntry entry) {
@@ -188,7 +208,19 @@ public class VoidController {
 
 		for (VoidEntry voidEntry : nbtVoid) if (itemEquals(newItem, voidEntry.getItem())) return;
 
-		nbtVoid.add(new VoidEntry(newItem, entry.getTime()));
+		VoidEntry newEntry = new VoidEntry(newItem, entry.getTime());
+		if (updating) {
+			pending.add(newEntry);
+			return;
+		}
+
+		addEntryUnconditional(newEntry);
+	}
+
+	private static void addEntryUnconditional(VoidEntry entry) {
+		nbtVoid.add(entry);
+		int maxStored = Config.getInstance().getMaxStoredItems() * 9;
+		if (nbtVoid.size() > maxStored) nbtVoid = nbtVoid.subList(0, maxStored);
 	}
 
 	private static boolean isIgnored(NbtCompound nbt) {
@@ -250,38 +282,41 @@ public class VoidController {
 
 	public static void fromPacket(Packet<?> packet) {
 		if (!Config.getInstance().getIsEnabled()) return;
-		if (packet instanceof InventoryS2CPacket acceptedPacket) {
-			for (ItemStack item : acceptedPacket.getContents()) {
-				VoidController.addItem(item);
-			}
-		} else if (packet instanceof ScreenHandlerSlotUpdateS2CPacket acceptedPacket) {
-			VoidController.addItem(acceptedPacket.getItemStack());
-		} else if (packet instanceof EntityEquipmentUpdateS2CPacket acceptedPacket) {
-			for (Pair<EquipmentSlot, ItemStack> pair : acceptedPacket.getEquipmentList()) {
-				VoidController.addItem(pair.getSecond());
-			}
-		} else if (packet instanceof EntityTrackerUpdateS2CPacket acceptedPacket) {
-			for (SerializedEntry<?> entry : acceptedPacket.trackedValues()) {
-				if (entry.value() instanceof ItemStack itemEntry) {
-					VoidController.addItem(itemEntry);
+		CompletableFuture.runAsync(() -> {
+			if (packet instanceof InventoryS2CPacket acceptedPacket) {
+				for (ItemStack item : acceptedPacket.getContents()) {
+					VoidController.addItem(item);
+				}
+			} else if (packet instanceof ScreenHandlerSlotUpdateS2CPacket acceptedPacket) {
+				VoidController.addItem(acceptedPacket.getItemStack());
+			} else if (packet instanceof EntityEquipmentUpdateS2CPacket acceptedPacket) {
+				for (Pair<EquipmentSlot, ItemStack> pair : acceptedPacket.getEquipmentList()) {
+					VoidController.addItem(pair.getSecond());
+				}
+			} else if (packet instanceof EntityTrackerUpdateS2CPacket acceptedPacket) {
+				for (SerializedEntry<?> entry : acceptedPacket.trackedValues()) {
+					if (entry.value() instanceof ItemStack itemEntry) {
+						VoidController.addItem(itemEntry);
+					}
+				}
+			} else if (packet instanceof SetTradeOffersS2CPacket acceptedPacket) {
+				for (TradeOffer offer : acceptedPacket.getOffers()) {
+					VoidController.addItem(offer.getOriginalFirstBuyItem());
+					VoidController.addItem(offer.getSecondBuyItem());
+					VoidController.addItem(offer.getSellItem());
+				}
+			} else if (packet instanceof GameMessageS2CPacket acceptedPacket) {
+				for (ItemStack item : VoidController.itemsFromText(acceptedPacket.content())) {
+					VoidController.addItem(item);
+				}
+			} else if (packet instanceof AdvancementUpdateS2CPacket acceptedPacket) {
+				for (Advancement.Builder builder : acceptedPacket.getAdvancementsToEarn().values()) {
+					AdvancementDisplay display = builder.display;
+					if (display != null) {
+						VoidController.addItem(display.getIcon());
+					}
 				}
 			}
-		} else if (packet instanceof SetTradeOffersS2CPacket acceptedPacket) {
-			for (TradeOffer offer : acceptedPacket.getOffers()) {
-				VoidController.addItem(offer.getOriginalFirstBuyItem());
-				VoidController.addItem(offer.getSecondBuyItem());
-				VoidController.addItem(offer.getSellItem());
-			}
-		} else if (packet instanceof GameMessageS2CPacket acceptedPacket) {
-			for (ItemStack item : VoidController.itemsFromText(acceptedPacket.content())) {
-				VoidController.addItem(item);
-			}
-		} else if (packet instanceof AdvancementUpdateS2CPacket acceptedPacket) {
-			for (Advancement.Builder builder : acceptedPacket.getAdvancementsToEarn().values()) {
-				AdvancementDisplay display = builder.display;
-				if (display != null)
-					VoidController.addItem(display.getIcon());
-			}
-		}
+		});
 	}
 }

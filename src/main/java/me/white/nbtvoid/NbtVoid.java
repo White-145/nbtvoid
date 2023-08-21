@@ -97,23 +97,56 @@ public class NbtVoid implements ClientModInitializer {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			// Do actions with void in async so it doesn't lag
 			while (KEYBIND_CLEAR.wasPressed()) {
-				CompletableFuture.runAsync(VoidController::clear);
+				if (VoidController.updating) {
+					client.player.sendMessage(Text.translatable("status.nbtvoid.updating"));
+				} else {
+					CompletableFuture.runAsync(() -> {
+						VoidController.clear();
+						client.player.sendMessage(Text.translatable("key.nbtvoid.clear.execute"), true);
+					});
+				}
 			}
 
 			while (KEYBIND_TOGGLE.wasPressed()) {
-				Config.getInstance().setIsEnabled(!Config.getInstance().getIsEnabled());
+				boolean isEnabled = Config.getInstance().getIsEnabled();
+				Config.getInstance().setIsEnabled(!isEnabled);
+				client.player.sendMessage(Text.translatable(isEnabled ? "key.nbtvoid.toggle.executeDisable" : "key.nbtvoid.toggle.executeEnable"), true);
 			}
 
 			while (KEYBIND_SAVE.wasPressed()) {
-				CompletableFuture.runAsync(VoidController::save);
+				if (VoidController.updating) {
+					client.player.sendMessage(Text.translatable("status.nbtvoid.updating"));
+				} else {
+					CompletableFuture.runAsync(() -> {
+						client.player.sendMessage(Text.translatable("key.nbtvoid.save.execute"), true);
+						VoidController.save();
+						client.player.sendMessage(Text.translatable("key.nbtvoid.save.executeFinish"), true);
+					});
+				}
 			}
 
 			while (KEYBIND_LOAD.wasPressed()) {
-				CompletableFuture.runAsync(VoidController::load);
+				if (VoidController.updating) {
+					client.player.sendMessage(Text.translatable("status.nbtvoid.updating"));
+				} else {
+					CompletableFuture.runAsync(() -> {
+						client.player.sendMessage(Text.translatable("key.nbtvoid.load.execute"), true);
+						VoidController.load();
+						client.player.sendMessage(Text.translatable("key.nbtvoid.load.executeFinish"), true);
+					});
+				}
 			}
 
 			while (KEYBIND_SCAN.wasPressed()) {
-				CompletableFuture.runAsync(VoidController::scan);
+				if (VoidController.updating) {
+					client.player.sendMessage(Text.translatable("status.nbtvoid.updating"));
+				} else {
+					CompletableFuture.runAsync(() -> {
+						client.player.sendMessage(Text.translatable("key.nbtvoid.scan.execute"), true);
+						VoidController.scan();
+						client.player.sendMessage(Text.translatable("key.nbtvoid.scan.executeFinish"), true);
+					});
+				}
 			}
 		});
 
