@@ -1,4 +1,3 @@
 accessWidener v1 named
 
-accessible field  net/minecraft/advancement/Advancement$Builder display Lnet/minecraft/advancement/AdvancementDisplay;
-accessible method net/minecraft/item/ItemGroup$Builder          type    (Lnet/minecraft/item/ItemGroup$Type;)Lnet/minecraft/item/ItemGroup$Builder;
+accessible method net/minecraft/item/ItemGroup$Builder type (Lnet/minecraft/item/ItemGroup$Type;)Lnet/minecraft/item/ItemGroup$Builder;

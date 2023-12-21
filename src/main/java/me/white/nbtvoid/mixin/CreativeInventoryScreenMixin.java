@@ -1,28 +1,23 @@
 package me.white.nbtvoid.mixin;
 
-import java.util.concurrent.CompletableFuture;
-
+import me.white.nbtvoid.Config;
+import me.white.nbtvoid.NbtVoid;
+import me.white.nbtvoid.util.SearchProvider;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import me.white.nbtvoid.Config;
-import me.white.nbtvoid.ModdedCreativeTab;
-import me.white.nbtvoid.ModdedCreativeTab.Type;
-
 import org.spongepowered.asm.mixin.injection.At;
 
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen.CreativeScreenHandler;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.text.Text;
 import net.minecraft.util.collection.DefaultedList;
+
+import java.util.*;
 
 @Mixin(CreativeInventoryScreen.class)
 public abstract class CreativeInventoryScreenMixin {
@@ -30,52 +25,47 @@ public abstract class CreativeInventoryScreenMixin {
     @Shadow private static ItemGroup selectedTab;
     @Shadow private float scrollPosition;
 
+    @Inject(method = "init()V", at = @At("TAIL"))
+    private void init(CallbackInfo info) {
+        if (selectedTab == NbtVoid.VOID_GROUP) {
+            searchBox.setMaxLength(256);
+            searchBox.setText(Config.getInstance().getDefaultSearchQuery());
+        }
+    }
+
     @Inject(method = "setSelectedTab(Lnet/minecraft/item/ItemGroup;)V", at = @At("TAIL"))
     private void setSelectedTab(ItemGroup group, CallbackInfo info) {
-        if (ModdedCreativeTab.getType(group) == Type.VOID) {
-            searchBox.setText(Config.getInstance().getDefaultSearchQuery());
+        if (group == NbtVoid.VOID_GROUP) {
             searchBox.setMaxLength(256);
+            searchBox.setText(Config.getInstance().getDefaultSearchQuery());
         }
     }
 
     @Inject(method = "search()V", at = @At("HEAD"), cancellable = true)
     private void search(CallbackInfo info) {
-        if (ModdedCreativeTab.getType(selectedTab) == Type.VOID) {
+        if (selectedTab == NbtVoid.VOID_GROUP) {
             info.cancel();
-            
-            ModdedCreativeTab moddedTab = ModdedCreativeTab.moddedTabs.get(selectedTab);
 
             String query = searchBox.getText();
             CreativeScreenHandler handler = ((CreativeInventoryScreen)(Object)this).getScreenHandler();
             DefaultedList<ItemStack> itemList = handler.itemList;
 
-            ItemStack infoItem = new ItemStack(Items.PAPER, 1);
-            infoItem.setCustomName(Text.translatable("itemGroup.nbtvoid.infoItem"));
-            infoItem.setSubNbt("CustomCreativeLock", new NbtCompound());
-
-            // TODO: dont show items until update is finished
-            // TODO: completely redo
             itemList.clear();
-            if (Config.getInstance().getDoAsyncSearch()) {
-                itemList.add(infoItem);
-                moddedTab.searcher = new ModdedCreativeTab.AsyncSearcher(handler, moddedTab, query);
-                CompletableFuture.runAsync(moddedTab.searcher);
-            } else {
-                itemList.addAll(moddedTab.getSearchProvider().apply(query));
-                handler.scrollItems(0);
+
+            ArrayList<ItemStack> items = new ArrayList<>(new SearchProvider(query).findAll(NbtVoid.VOID.getItems()));
+
+            switch (Config.getInstance().getSortType()) {
+                case ALPHABETIC -> {
+                    items.sort(Comparator.comparing((stack) -> stack.getName().getString()));
+                }
+                case STORE_DATE -> {
+                    Collections.reverse(items);
+                }
             }
+            itemList.addAll(items);
 
+            handler.scrollItems(0);
             scrollPosition = 0.0f;
-        }
-    }
-
-    @Inject(method = "init()V", at = @At("TAIL"))
-    private void init(CallbackInfo info) {
-        MinecraftClient instance = MinecraftClient.getInstance();
-        if (!instance.interactionManager.hasCreativeInventory()) return;
-        if (ModdedCreativeTab.getType(selectedTab) == Type.VOID) {
-            searchBox.setText(Config.getInstance().getDefaultSearchQuery());
-            searchBox.setMaxLength(256);
         }
     }
 }
