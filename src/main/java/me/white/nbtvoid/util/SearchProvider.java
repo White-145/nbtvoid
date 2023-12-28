@@ -69,7 +69,7 @@ public class SearchProvider {
             if (!nbt.contains("display", NbtElement.COMPOUND_TYPE)) return false;
             NbtCompound display = nbt.getCompound("display");
             if (display.contains("Name", NbtElement.STRING_TYPE)) {
-                return Text.Serializer.fromJson(display.getString("Name")).getString().toLowerCase(Locale.ROOT).contains(query);
+                return Text.Serialization.fromJson(display.getString("Name")).getString().toLowerCase(Locale.ROOT).contains(query);
             }
         }
         return false;

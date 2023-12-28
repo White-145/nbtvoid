@@ -18,13 +18,13 @@ import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 public class NbtVoid implements ClientModInitializer {
-    private static final File VOID_SAVE_FILE = FabricLoader.getInstance().getGameDir().resolve("void.nbt").toFile();
+    private static final Path VOID_SAVE_PATH = FabricLoader.getInstance().getGameDir().resolve("void.nbt");
     public static final String MOD_ID = "nbtvoid";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
     public static final VoidCollection VOID = new VoidCollection();
@@ -40,7 +40,7 @@ public class NbtVoid implements ClientModInitializer {
         VOID.setMaxSize(Config.getInstance().getMaxStoredItemRows() * 9);
         NbtCompound nbt;
         try {
-            nbt = NbtIo.read(VOID_SAVE_FILE);
+            nbt = NbtIo.read(VOID_SAVE_PATH);
         } catch (IOException e) {
             LOGGER.error("Could not load NBT void: " + e);
             return;
@@ -76,7 +76,7 @@ public class NbtVoid implements ClientModInitializer {
         NbtCompound nbt = new NbtCompound();
         nbt.put("entries", entries);
         try {
-            NbtIo.write(nbt, VOID_SAVE_FILE);
+            NbtIo.write(nbt, VOID_SAVE_PATH);
             LOGGER.info("Saved NBT void (" + VOID.getItems().size() + " items)");
         } catch (IOException e) {
             LOGGER.error("Could not save NBT void: " + e);
